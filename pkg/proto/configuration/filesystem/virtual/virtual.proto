@@ -171,6 +171,26 @@ message FUSEMountConfiguration {
 
   // Method to use to create the FUSE mount.
   MountMethod mount_method = 10;
+
+  // The maximum number of asynchronous FUSE requests the kernel is
+  // permitted to have in flight against this mount, corresponding to
+  // the max_background field in the FUSE_INIT reply. The kernel
+  // additionally treats max_background * 3/4 as a congestion threshold;
+  // requests beyond it block in the kernel until the queue drains.
+  //
+  // The go-fuse default of _DEFAULT_BACKGROUND_TASKS (12) is suitable
+  // for bb_clientd and similar low-concurrency consumers. For bb_worker,
+  // where a single mount serves many concurrent actions and each may
+  // issue readahead, the queue saturates quickly and reads stall in
+  // the kernel.
+  //
+  // The appropriate value scales with the number of concurrent worker
+  // threads sharing the mount: more threads means more actions in
+  // flight, each potentially fanning out into many parallel reads.
+  // A reasonable starting point for bb_worker is roughly 128 per
+  // worker thread (e.g. 1024 for 8 threads); tune up if reads still
+  // stall under sustained concurrency.
+  uint32 maximum_background_tasks = 11;
 }
 
 message NFSv4MountConfiguration {

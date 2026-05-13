@@ -189,6 +189,7 @@ type FUSEMountConfiguration struct {
 	InHeaderAuthenticationMetadataJmespathExpression *jmespath.Expression               `protobuf:"bytes,8,opt,name=in_header_authentication_metadata_jmespath_expression,json=inHeaderAuthenticationMetadataJmespathExpression,proto3" json:"in_header_authentication_metadata_jmespath_expression,omitempty"`
 	LinuxBackingDevInfoTunables                      map[string]string                  `protobuf:"bytes,9,rep,name=linux_backing_dev_info_tunables,json=linuxBackingDevInfoTunables,proto3" json:"linux_backing_dev_info_tunables,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	MountMethod                                      FUSEMountConfiguration_MountMethod `protobuf:"varint,10,opt,name=mount_method,json=mountMethod,proto3,enum=buildbarn.configuration.filesystem.virtual.FUSEMountConfiguration_MountMethod" json:"mount_method,omitempty"`
+	MaximumBackgroundTasks                           uint32                             `protobuf:"varint,11,opt,name=maximum_background_tasks,json=maximumBackgroundTasks,proto3" json:"maximum_background_tasks,omitempty"`
 	unknownFields                                    protoimpl.UnknownFields
 	sizeCache                                        protoimpl.SizeCache
 }
@@ -263,6 +264,13 @@ func (x *FUSEMountConfiguration) GetMountMethod() FUSEMountConfiguration_MountMe
 		return x.MountMethod
 	}
 	return FUSEMountConfiguration_FUSERMOUNT
+}
+
+func (x *FUSEMountConfiguration) GetMaximumBackgroundTasks() uint32 {
+	if x != nil {
+		return x.MaximumBackgroundTasks
+	}
+	return 0
 }
 
 type NFSv4MountConfiguration struct {
@@ -546,7 +554,7 @@ const file_github_com_buildbarn_bb_remote_execution_pkg_proto_configuration_file
 	"\x04fuse\x18\x02 \x01(\v2B.buildbarn.configuration.filesystem.virtual.FUSEMountConfigurationH\x00R\x04fuse\x12[\n" +
 	"\x05nfsv4\x18\x03 \x01(\v2C.buildbarn.configuration.filesystem.virtual.NFSv4MountConfigurationH\x00R\x05nfsv4\x120\n" +
 	"\x06winfsp\x18\x04 \x01(\v2\x16.google.protobuf.EmptyH\x00R\x06winfspB\t\n" +
-	"\abackend\"\xca\x06\n" +
+	"\abackend\"\x84\a\n" +
 	"\x16FUSEMountConfiguration\x12S\n" +
 	"\x18directory_entry_validity\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\x16directoryEntryValidity\x12S\n" +
 	"\x18inode_attribute_validity\x18\x03 \x01(\v2\x19.google.protobuf.DurationR\x16inodeAttributeValidity\x12\x1f\n" +
@@ -555,7 +563,8 @@ const file_github_com_buildbarn_bb_remote_execution_pkg_proto_configuration_file
 	"5in_header_authentication_metadata_jmespath_expression\x18\b \x01(\v2,.buildbarn.configuration.jmespath.ExpressionR0inHeaderAuthenticationMetadataJmespathExpression\x12\xa9\x01\n" +
 	"\x1flinux_backing_dev_info_tunables\x18\t \x03(\v2c.buildbarn.configuration.filesystem.virtual.FUSEMountConfiguration.LinuxBackingDevInfoTunablesEntryR\x1blinuxBackingDevInfoTunables\x12q\n" +
 	"\fmount_method\x18\n" +
-	" \x01(\x0e2N.buildbarn.configuration.filesystem.virtual.FUSEMountConfiguration.MountMethodR\vmountMethod\x1aN\n" +
+	" \x01(\x0e2N.buildbarn.configuration.filesystem.virtual.FUSEMountConfiguration.MountMethodR\vmountMethod\x128\n" +
+	"\x18maximum_background_tasks\x18\v \x01(\rR\x16maximumBackgroundTasks\x1aN\n" +
 	" LinuxBackingDevInfoTunablesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"D\n" +
