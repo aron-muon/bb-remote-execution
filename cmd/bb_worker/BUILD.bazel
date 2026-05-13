@@ -82,6 +82,12 @@ image_push(
     image = ":bb_worker_container",
     registry = "ghcr.io",
     repository = "aron-muon/bb-worker",
+    # Force rules_img to pass workspace stamp files to expand-template. Its
+    # should_stamp() only auto-detects {{...}} placeholders inside inline
+    # `templates` values, NOT inside `tag_file` content — so without this we'd
+    # silently skip stamping and the build fails with `BUILD_SCM_TIMESTAMP not
+    # defined`. Required because our tag template lives in stamped_tags.txt.
+    stamp = "enabled",
     tag_file = "@com_github_buildbarn_bb_storage//tools:stamped_tags",
     tags = ["manual"],
 )
