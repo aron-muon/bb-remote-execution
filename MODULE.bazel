@@ -24,8 +24,14 @@ git_override(
 
 git_override(
     module_name = "com_github_buildbarn_bb_storage",
-    commit = "e5d91cab6de691aa13e549440545fc6f79e87025",
-    remote = "https://github.com/buildbarn/bb-storage.git",
+    # Hotfix: aron-muon/bb-storage @ aron/exit-cleanly-on-signal-self-race
+    # Picks up the time.Sleep(5) -> time.Sleep(time.Second) and os.Exit(1)
+    # -> os.Exit(0) fix in terminateWithSignal so that bb_worker pods
+    # actually exit Succeeded instead of Failed/exit=1 on graceful
+    # shutdown. Revert this back to ghcr.io/buildbarn once the upstream
+    # PR lands and is released.
+    commit = "55de026c37296d5381ae44ea6b82eca997598c5e",
+    remote = "https://github.com/aron-muon/bb-storage.git",
 )
 
 git_override(
