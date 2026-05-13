@@ -65,6 +65,9 @@ func (m *fuseMount) Expose(terminationGroup program.Group, rootDirectory virtual
 		// make it into the virtual file system after
 		// calling close()/fsync()/munmap()/msync().
 		EnableWritebackCache: true,
+		// Cap the FUSE asynchronous request queue. When zero,
+		// go-fuse falls back to its default of 12.
+		MaxBackground: int(m.configuration.MaximumBackground),
 	}
 
 	switch m.configuration.MountMethod {
