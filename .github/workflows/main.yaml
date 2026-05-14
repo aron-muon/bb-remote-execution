@@ -1095,7 +1095,7 @@
       }
    },
    "permissions": {
-      "contents": "read",
+      "contents": "write",
       "packages": "write"
    }
 }
