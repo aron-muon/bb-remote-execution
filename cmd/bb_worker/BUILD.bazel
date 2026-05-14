@@ -1,6 +1,6 @@
 load("@com_github_buildbarn_bb_storage//tools:container.bzl", "multiarch_go_image")
-load("@rules_img//img:push.bzl", "image_push")
 load("@rules_go//go:def.bzl", "go_binary", "go_library")
+load("@rules_img//img:push.bzl", "image_push")
 
 go_library(
     name = "bb_worker_lib",

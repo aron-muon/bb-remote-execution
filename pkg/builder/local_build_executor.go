@@ -65,21 +65,21 @@ func (el *capturingErrorLogger) GetError() error {
 }
 
 type localBuildExecutor struct {
-	contentAddressableStorage              blobstore.BlobAccess
-	buildDirectoryCreator                  BuildDirectoryCreator
-	runner                                 runner_pb.RunnerClient
-	clock                                  clock.Clock
-	maximumWritableFileUploadDelay         time.Duration
-	inputRootCharacterDevices              map[path.Component]filesystem.DeviceNumber
-	maximumMessageSizeBytes                int
-	environmentVariables                   map[string]string
-	forceUploadTreesAndDirectories         bool
-	forwardAuxiliaryMetadataToEnvironment  bool
+	contentAddressableStorage             blobstore.BlobAccess
+	buildDirectoryCreator                 BuildDirectoryCreator
+	runner                                runner_pb.RunnerClient
+	clock                                 clock.Clock
+	maximumWritableFileUploadDelay        time.Duration
+	inputRootCharacterDevices             map[path.Component]filesystem.DeviceNumber
+	maximumMessageSizeBytes               int
+	environmentVariables                  map[string]string
+	forceUploadTreesAndDirectories        bool
+	forwardAuxiliaryMetadataToEnvironment bool
 }
 
 // NewLocalBuildExecutor returns a BuildExecutor that executes build
 // steps on the local system.
-func NewLocalBuildExecutor(contentAddressableStorage blobstore.BlobAccess, buildDirectoryCreator BuildDirectoryCreator, runner runner_pb.RunnerClient, clock clock.Clock, maximumWritableFileUploadDelay time.Duration, inputRootCharacterDevices map[path.Component]filesystem.DeviceNumber, maximumMessageSizeBytes int, environmentVariables map[string]string, forceUploadTreesAndDirectories bool, forwardAuxiliaryMetadataToEnvironment bool) BuildExecutor {
+func NewLocalBuildExecutor(contentAddressableStorage blobstore.BlobAccess, buildDirectoryCreator BuildDirectoryCreator, runner runner_pb.RunnerClient, clock clock.Clock, maximumWritableFileUploadDelay time.Duration, inputRootCharacterDevices map[path.Component]filesystem.DeviceNumber, maximumMessageSizeBytes int, environmentVariables map[string]string, forceUploadTreesAndDirectories, forwardAuxiliaryMetadataToEnvironment bool) BuildExecutor {
 	return &localBuildExecutor{
 		contentAddressableStorage:             contentAddressableStorage,
 		buildDirectoryCreator:                 buildDirectoryCreator,
