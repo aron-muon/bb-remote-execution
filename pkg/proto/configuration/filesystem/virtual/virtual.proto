@@ -178,6 +178,7 @@ message FUSEMountConfiguration {
   // additionally treats max_background * 3/4 as a congestion threshold;
   // requests beyond it block in the kernel until the queue drains.
   //
+<<<<<<< HEAD
   // The go-fuse default of 12 is suitable for bb_clientd and similar
   // low-concurrency consumers. For bb_worker, where a single mount
   // serves many concurrent actions and each may issue readahead, the
@@ -185,6 +186,21 @@ message FUSEMountConfiguration {
   //
   // Recommended value: 1024 for bb_worker, unset for other consumers.
   uint32 maximum_background = 11;
+=======
+  // The go-fuse default of _DEFAULT_BACKGROUND_TASKS (12) is suitable
+  // for bb_clientd and similar low-concurrency consumers. For bb_worker,
+  // where a single mount serves many concurrent actions and each may
+  // issue readahead, the queue saturates quickly and reads stall in
+  // the kernel.
+  //
+  // The appropriate value scales with the number of concurrent worker
+  // threads sharing the mount: more threads means more actions in
+  // flight, each potentially fanning out into many parallel reads.
+  // A reasonable starting point for bb_worker is roughly 128 per
+  // worker thread (e.g. 1024 for 8 threads); tune up if reads still
+  // stall under sustained concurrency.
+  uint32 maximum_background_tasks = 11;
+>>>>>>> ed02b7a (fuse: configurable MaxBackground from go-fuse, minor cleanups (#222))
 }
 
 message NFSv4MountConfiguration {
