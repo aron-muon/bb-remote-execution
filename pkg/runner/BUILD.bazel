@@ -4,7 +4,9 @@ go_library(
     name = "runner",
     srcs = [
         "apple_xcode_resolving_runner.go",
+        "broker_client.go",
         "clean_runner.go",
+        "credentialed_runner.go",
         "local_runner.go",
         "local_runner_darwin.go",
         "local_runner_rss_bytes.go",
@@ -19,6 +21,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/cleaner",
+        "//pkg/proto/configuration/bb_runner",
         "//pkg/proto/runner",
         "//pkg/proto/tmp_installer",
         "@com_github_buildbarn_bb_storage//pkg/filesystem",

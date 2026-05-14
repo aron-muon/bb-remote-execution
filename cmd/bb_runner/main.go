@@ -69,6 +69,10 @@ func main() {
 			commandCreator,
 			configuration.SetTmpdirEnvironmentVariable)
 
+		if ci := configuration.CredentialInjection; ci != nil {
+			r = runner.NewCredentialedRunner(r, ci)
+		}
+
 		// Let bb_runner replace temporary directories with symbolic
 		// links pointing to the temporary directory set up by
 		// bb_worker.
