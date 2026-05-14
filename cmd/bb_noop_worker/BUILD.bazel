@@ -1,5 +1,6 @@
-load("@com_github_buildbarn_bb_storage//tools:container.bzl", "container_push_official", "multiarch_go_image")
+load("@com_github_buildbarn_bb_storage//tools:container.bzl", "multiarch_go_image")
 load("@rules_go//go:def.bzl", "go_binary", "go_library")
+load("@rules_img//img:push.bzl", "image_push")
 
 go_library(
     name = "bb_noop_worker_lib",
@@ -35,8 +36,16 @@ multiarch_go_image(
     binary = ":bb_noop_worker",
 )
 
-container_push_official(
+# Push directly to ghcr.io/aron-muon/bb-noop-worker. Bypasses upstream's
+# container_push_official macro (which pushes to ghcr.io/buildbarn/) so we
+# can publish forked images. See cmd/bb_worker/BUILD.bazel for the
+# rationale behind stamp = "enabled".
+image_push(
     name = "bb_noop_worker_container_push",
-    component = "bb-noop-worker",
     image = ":bb_noop_worker_container",
+    registry = "ghcr.io",
+    repository = "aron-muon/bb-noop-worker",
+    stamp = "enabled",
+    tag_file = "@com_github_buildbarn_bb_storage//tools:stamped_tags",
+    tags = ["manual"],
 )
