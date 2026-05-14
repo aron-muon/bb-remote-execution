@@ -67,11 +67,7 @@ func (m *fuseMount) Expose(terminationGroup program.Group, rootDirectory virtual
 		EnableWritebackCache: true,
 		// Cap the FUSE asynchronous request queue. When zero,
 		// go-fuse falls back to its default of 12.
-<<<<<<< HEAD
-		MaxBackground: int(m.configuration.MaximumBackground),
-=======
 		MaxBackground: int(m.configuration.MaximumBackgroundTasks),
->>>>>>> ed02b7a (fuse: configurable MaxBackground from go-fuse, minor cleanups (#222))
 	}
 
 	switch m.configuration.MountMethod {
