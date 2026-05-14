@@ -1,6 +1,7 @@
 load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
 load("@com_github_buildbarn_bb_storage//tools:container.bzl", "container_push_official", "multiarch_go_image")
 load("@rules_go//go:def.bzl", "go_binary", "go_library")
+load("@rules_img//img:push.bzl", "image_push")
 
 go_library(
     name = "bb_runner_installer_lib",
@@ -26,6 +27,22 @@ container_push_official(
     name = "bb_runner_installer_container_push",
     component = "bb-runner-installer",
     image = ":bb_runner_installer_container",
+)
+
+# Mirror of bb_worker_container_push: bypasses upstream's container_push_official
+# macro so we can publish a forked image carrying bb_runner with the bb-storage
+# terminateWithSignal exit-code fix. Without this, the bb-runner sidecar
+# (which runs the embedded bb_runner binary) still exits 1 on graceful SIGTERM
+# even though bb_worker now exits 0, leaving pods in Failed phase.
+# See cmd/bb_worker/BUILD.bazel for stamp = "enabled" rationale.
+image_push(
+    name = "bb_runner_installer_container_push_aron",
+    image = ":bb_runner_installer_container",
+    registry = "ghcr.io",
+    repository = "aron-muon/bb-runner-installer",
+    stamp = "enabled",
+    tag_file = "@com_github_buildbarn_bb_storage//tools:stamped_tags",
+    tags = ["manual"],
 )
 
 copy_file(

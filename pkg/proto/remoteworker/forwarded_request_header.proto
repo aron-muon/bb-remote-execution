@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package buildbarn.remoteworker;
+
+option go_package = "github.com/buildbarn/bb-remote-execution/pkg/proto/remoteworker";
+
+// ForwardedRequestHeader carries a single gRPC metadata header value
+// that the scheduler extracted from an incoming Execute() call and
+// packed into DesiredState_Executing.auxiliary_metadata.
+//
+// The worker can match on this message's type URL to recognize
+// forwarded headers and inject them into the action's environment
+// variables, making them available to the runner process.
+//
+// This is the propagation channel for per-build identity tokens (e.g.,
+// bb-credential-broker delegation JWTs) that must reach the action
+// without contaminating the Action digest or CAS.
+message ForwardedRequestHeader {
+  // The original gRPC metadata key (lowercased by the gRPC transport).
+  string name = 1;
+
+  // The header value (UTF-8 string metadata only; binary metadata keys
+  // ending in "-bin" are not supported by this mechanism).
+  string value = 2;
+}

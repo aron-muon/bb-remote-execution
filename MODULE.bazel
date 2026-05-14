@@ -25,8 +25,18 @@ git_override(
 
 git_override(
     module_name = "com_github_buildbarn_bb_storage",
-    commit = "e5d91cab6de691aa13e549440545fc6f79e87025",
-    remote = "https://github.com/buildbarn/bb-storage.git",
+    # Hotfix: aron-muon/bb-storage @ aron/exit-cleanly-on-signal-self-race
+    # Drops the signal.Reset+process.Signal+sleep+os.Exit dance in
+    # terminateWithSignal in favour of os.Exit(0) directly. signal.Reset
+    # only disables Go's user-channel routing; the runtime trampoline
+    # still intercepts the raised signal and dispatches to
+    # runtime.dieFromSignal, which falls through to exit(2) under
+    # PID-1-in-a-namespace + multi-goroutine conditions (validated on
+    # staging: every clean shutdown produced container exit 2). The
+    # fallback time.Sleep + os.Exit(0) never ran because the runtime
+    # exited first. Revert once upstream lands a fix.
+    commit = "e6b2ba908273c58756bea09dcdf1531e93227844",
+    remote = "https://github.com/aron-muon/bb-storage.git",
 )
 
 git_override(

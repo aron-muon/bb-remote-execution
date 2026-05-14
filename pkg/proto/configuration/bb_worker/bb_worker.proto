@@ -402,6 +402,21 @@ message RunnerConfiguration {
   // directory. This should typically be set to the primary group of the
   // user that is used by bb_runner to run actions.
   uint32 build_directory_owner_group_id = 16;
+
+  // When true, ForwardedRequestHeader messages found in the inbound
+  // DesiredState_Executing.auxiliary_metadata are decoded and injected
+  // into the action's environment variables before the runner is
+  // invoked. This enables per-build identity tokens (e.g.,
+  // BB_DELEGATION_JWT from bb-credential-broker) to reach the action
+  // process tree without being part of the Action digest.
+  //
+  // Environment variables set this way are overridden by variables
+  // from the Command proto (which is part of the Action digest), so
+  // a malicious client cannot shadow a digest-committed variable.
+  //
+  // When false (default), forwarded headers in auxiliary_metadata are
+  // ignored and behaviour is identical to upstream.
+  bool forward_auxiliary_metadata_to_environment = 17;
 }
 
 message CompletedActionLoggingConfiguration {

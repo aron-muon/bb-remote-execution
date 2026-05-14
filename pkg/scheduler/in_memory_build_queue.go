@@ -8,6 +8,7 @@ import (
 	"math"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -213,6 +214,14 @@ type InMemoryBuildQueueConfiguration struct {
 	// worker may remain registered by InMemoryBuildQueue when no
 	// Synchronize() calls are received.
 	WorkerWithNoSynchronizationsTimeout time.Duration
+
+	// ForwardRequestHeaders is the set of gRPC metadata header names
+	// to extract from incoming Execute() calls and forward to workers
+	// via DesiredState_Executing.AuxiliaryMetadata. Each value is
+	// wrapped in a ForwardedRequestHeader Any message. Header names
+	// are matched case-insensitively (gRPC normalizes to lowercase).
+	// When empty, no additional headers are forwarded.
+	ForwardRequestHeaders []string
 }
 
 // InMemoryBuildQueue implements a BuildQueue that can distribute
@@ -464,6 +473,27 @@ func (bq *InMemoryBuildQueue) Execute(in *remoteexecution.ExecuteRequest, out re
 		}
 		auxiliaryMetadata = append(auxiliaryMetadata, requestMetadataAny)
 	}
+
+	if len(bq.configuration.ForwardRequestHeaders) > 0 {
+		if md, ok := metadata.FromIncomingContext(ctx); ok {
+			for _, headerName := range bq.configuration.ForwardRequestHeaders {
+				if strings.HasSuffix(headerName, "-bin") {
+					continue
+				}
+				for _, value := range md.Get(headerName) {
+					forwardedAny, err := anypb.New(&remoteworker.ForwardedRequestHeader{
+						Name:  headerName,
+						Value: value,
+					})
+					if err != nil {
+						return util.StatusWrapfWithCode(err, codes.Internal, "Failed to marshal forwarded header %#v", headerName)
+					}
+					auxiliaryMetadata = append(auxiliaryMetadata, forwardedAny)
+				}
+			}
+		}
+	}
+
 	w3cTraceContext := otel.W3CTraceContextFromContext(ctx)
 
 	action, platformKey, invocationKeys, initialSizeClassSelector, err := bq.actionRouter.RouteAction(ctx, actionDigest.GetDigestFunction(), action, requestMetadata)

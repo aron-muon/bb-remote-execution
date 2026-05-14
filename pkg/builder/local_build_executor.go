@@ -65,30 +65,32 @@ func (el *capturingErrorLogger) GetError() error {
 }
 
 type localBuildExecutor struct {
-	contentAddressableStorage      blobstore.BlobAccess
-	buildDirectoryCreator          BuildDirectoryCreator
-	runner                         runner_pb.RunnerClient
-	clock                          clock.Clock
-	maximumWritableFileUploadDelay time.Duration
-	inputRootCharacterDevices      map[path.Component]filesystem.DeviceNumber
-	maximumMessageSizeBytes        int
-	environmentVariables           map[string]string
-	forceUploadTreesAndDirectories bool
+	contentAddressableStorage             blobstore.BlobAccess
+	buildDirectoryCreator                 BuildDirectoryCreator
+	runner                                runner_pb.RunnerClient
+	clock                                 clock.Clock
+	maximumWritableFileUploadDelay        time.Duration
+	inputRootCharacterDevices             map[path.Component]filesystem.DeviceNumber
+	maximumMessageSizeBytes               int
+	environmentVariables                  map[string]string
+	forceUploadTreesAndDirectories        bool
+	forwardAuxiliaryMetadataToEnvironment bool
 }
 
 // NewLocalBuildExecutor returns a BuildExecutor that executes build
 // steps on the local system.
-func NewLocalBuildExecutor(contentAddressableStorage blobstore.BlobAccess, buildDirectoryCreator BuildDirectoryCreator, runner runner_pb.RunnerClient, clock clock.Clock, maximumWritableFileUploadDelay time.Duration, inputRootCharacterDevices map[path.Component]filesystem.DeviceNumber, maximumMessageSizeBytes int, environmentVariables map[string]string, forceUploadTreesAndDirectories bool) BuildExecutor {
+func NewLocalBuildExecutor(contentAddressableStorage blobstore.BlobAccess, buildDirectoryCreator BuildDirectoryCreator, runner runner_pb.RunnerClient, clock clock.Clock, maximumWritableFileUploadDelay time.Duration, inputRootCharacterDevices map[path.Component]filesystem.DeviceNumber, maximumMessageSizeBytes int, environmentVariables map[string]string, forceUploadTreesAndDirectories, forwardAuxiliaryMetadataToEnvironment bool) BuildExecutor {
 	return &localBuildExecutor{
-		contentAddressableStorage:      contentAddressableStorage,
-		buildDirectoryCreator:          buildDirectoryCreator,
-		runner:                         runner,
-		clock:                          clock,
-		maximumWritableFileUploadDelay: maximumWritableFileUploadDelay,
-		inputRootCharacterDevices:      inputRootCharacterDevices,
-		maximumMessageSizeBytes:        maximumMessageSizeBytes,
-		environmentVariables:           environmentVariables,
-		forceUploadTreesAndDirectories: forceUploadTreesAndDirectories,
+		contentAddressableStorage:             contentAddressableStorage,
+		buildDirectoryCreator:                 buildDirectoryCreator,
+		runner:                                runner,
+		clock:                                 clock,
+		maximumWritableFileUploadDelay:        maximumWritableFileUploadDelay,
+		inputRootCharacterDevices:             inputRootCharacterDevices,
+		maximumMessageSizeBytes:               maximumMessageSizeBytes,
+		environmentVariables:                  environmentVariables,
+		forceUploadTreesAndDirectories:        forceUploadTreesAndDirectories,
+		forwardAuxiliaryMetadataToEnvironment: forwardAuxiliaryMetadataToEnvironment,
 	}
 }
 
@@ -270,6 +272,16 @@ func (be *localBuildExecutor) Execute(ctx context.Context, filePool pool.FilePoo
 	environmentVariables := map[string]string{}
 	for name, value := range be.environmentVariables {
 		environmentVariables[name] = value
+	}
+	if be.forwardAuxiliaryMetadataToEnvironment {
+		for _, anyMsg := range request.AuxiliaryMetadata {
+			var header remoteworker.ForwardedRequestHeader
+			if anyMsg.MessageIs(&header) {
+				if err := anyMsg.UnmarshalTo(&header); err == nil {
+					environmentVariables[header.Name] = header.Value
+				}
+			}
+		}
 	}
 	for _, environmentVariable := range command.EnvironmentVariables {
 		environmentVariables[environmentVariable.Name] = environmentVariable.Value

@@ -1,8 +1,9 @@
 load("@aspect_bazel_lib//lib:transitions.bzl", "platform_transition_filegroup")
 load("@aspect_rules_js//js:defs.bzl", "js_run_binary")
 load("@com_github_buildbarn_bb_remote_execution_npm//:purgecss/package_json.bzl", purgecss_bin = "bin")
-load("@com_github_buildbarn_bb_storage//tools:container.bzl", "container_push_official", "multiarch_go_image")
+load("@com_github_buildbarn_bb_storage//tools:container.bzl", "multiarch_go_image")
 load("@rules_go//go:def.bzl", "go_binary", "go_library")
+load("@rules_img//img:push.bzl", "image_push")
 
 go_library(
     name = "bb_scheduler_lib",
@@ -121,8 +122,15 @@ multiarch_go_image(
     binary = ":bb_scheduler",
 )
 
-container_push_official(
+# Push directly to ghcr.io/aron-muon/bb-scheduler. Bypasses upstream's
+# container_push_official macro (which pushes to ghcr.io/buildbarn/) so we
+# can publish a forked image carrying the delegation-token-propagation patch.
+image_push(
     name = "bb_scheduler_container_push",
-    component = "bb-scheduler",
     image = ":bb_scheduler_container",
+    registry = "ghcr.io",
+    repository = "aron-muon/bb-scheduler",
+    stamp = "enabled",
+    tag_file = "@com_github_buildbarn_bb_storage//tools:stamped_tags",
+    tags = ["manual"],
 )
