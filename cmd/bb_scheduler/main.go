@@ -145,6 +145,7 @@ func main() {
 				},
 				WorkerTaskRetryCount:                9,
 				WorkerWithNoSynchronizationsTimeout: time.Minute,
+				ForwardRequestHeaders:               configuration.ForwardRequestHeaders,
 			},
 			int(configuration.MaximumMessageSizeBytes),
 			actionRouter,

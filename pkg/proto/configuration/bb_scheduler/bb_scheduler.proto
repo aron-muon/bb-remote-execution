@@ -164,6 +164,24 @@ message ApplicationConfiguration {
   // process-wide pool shared by all gRPC CAS clients and the
   // ByteStream server.
   buildbarn.configuration.zstd.PoolConfiguration zstd_pool = 24;
+
+  // Names of gRPC metadata headers to extract from incoming Execute()
+  // calls and forward to workers via DesiredState_Executing's
+  // auxiliary_metadata field. Each forwarded header is wrapped in a
+  // ForwardedRequestHeader Any message.
+  //
+  // Headers listed here are NOT part of the Action digest and do NOT
+  // contaminate the CAS — they travel as gRPC metadata only. This
+  // makes them suitable for carrying per-build identity tokens (e.g.,
+  // bb-credential-broker delegation JWTs via --remote_exec_header).
+  //
+  // Header names are matched case-insensitively (gRPC normalizes
+  // metadata keys to lowercase). Binary headers (keys ending in
+  // "-bin") are not supported; they are silently skipped.
+  //
+  // When empty (default), no additional headers are forwarded and
+  // behaviour is identical to upstream.
+  repeated string forward_request_headers = 25;
 }
 
 message PredeclaredPlatformQueueConfiguration {

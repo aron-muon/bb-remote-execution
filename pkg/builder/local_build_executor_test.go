@@ -48,6 +48,7 @@ func TestLocalBuildExecutorInvalidActionDigest(t *testing.T) {
 		/* maximumMessageSizeBytes = */ 10000,
 		/* environmentVariables = */ map[string]string{},
 		/* forceUploadTreesAndDirectories = */ false,
+		/* forwardAuxiliaryMetadataToEnvironment = */ false,
 	)
 
 	filePool := mock.NewMockFilePool(ctrl)
@@ -97,6 +98,7 @@ func TestLocalBuildExecutorMissingAction(t *testing.T) {
 		/* maximumMessageSizeBytes = */ 10000,
 		/* environmentVariables = */ map[string]string{},
 		/* forceUploadTreesAndDirectories = */ false,
+		/* forwardAuxiliaryMetadataToEnvironment = */ false,
 	)
 
 	filePool := mock.NewMockFilePool(ctrl)
@@ -142,6 +144,7 @@ func TestLocalBuildExecutorBuildDirectoryCreatorFailedFailed(t *testing.T) {
 		/* maximumMessageSizeBytes = */ 10000,
 		/* environmentVariables = */ map[string]string{},
 		/* forceUploadTreesAndDirectories = */ false,
+		/* forwardAuxiliaryMetadataToEnvironment = */ false,
 	)
 
 	filePool := mock.NewMockFilePool(ctrl)
@@ -209,6 +212,7 @@ func TestLocalBuildExecutorInputRootPopulationFailed(t *testing.T) {
 		/* maximumMessageSizeBytes = */ 10000,
 		/* environmentVariables = */ map[string]string{},
 		/* forceUploadTreesAndDirectories = */ false,
+		/* forwardAuxiliaryMetadataToEnvironment = */ false,
 	)
 
 	metadata := make(chan *remoteworker.CurrentState_Executing, 10)
@@ -285,6 +289,7 @@ func TestLocalBuildExecutorOutputDirectoryCreationFailure(t *testing.T) {
 		/* maximumMessageSizeBytes = */ 10000,
 		/* environmentVariables = */ map[string]string{},
 		/* forceUploadTreesAndDirectories = */ false,
+		/* forwardAuxiliaryMetadataToEnvironment = */ false,
 	)
 
 	metadata := make(chan *remoteworker.CurrentState_Executing, 10)
@@ -354,6 +359,7 @@ func TestLocalBuildExecutorMissingCommand(t *testing.T) {
 		/* maximumMessageSizeBytes = */ 10000,
 		/* environmentVariables = */ map[string]string{},
 		/* forceUploadTreesAndDirectories = */ false,
+		/* forwardAuxiliaryMetadataToEnvironment = */ false,
 	)
 
 	metadata := make(chan *remoteworker.CurrentState_Executing, 10)
@@ -480,6 +486,7 @@ func TestLocalBuildExecutorOutputSymlinkReadingFailure(t *testing.T) {
 		/* maximumMessageSizeBytes = */ 10000,
 		/* environmentVariables = */ map[string]string{},
 		/* forceUploadTreesAndDirectories = */ false,
+		/* forwardAuxiliaryMetadataToEnvironment = */ false,
 	)
 
 	metadata := make(chan *remoteworker.CurrentState_Executing, 10)
@@ -712,6 +719,7 @@ func TestLocalBuildExecutorSuccess(t *testing.T) {
 			"PWD":      "dont-overwrite",
 		},
 		/* forceUploadTreesAndDirectories = */ false,
+		/* forwardAuxiliaryMetadataToEnvironment = */ false,
 	)
 
 	requestMetadata, err := anypb.New(&remoteexecution.RequestMetadata{
@@ -795,6 +803,7 @@ func TestLocalBuildExecutorCachingInvalidTimeout(t *testing.T) {
 		/* maximumMessageSizeBytes = */ 10000,
 		/* environmentVariables = */ map[string]string{},
 		/* forceUploadTreesAndDirectories = */ false,
+		/* forwardAuxiliaryMetadataToEnvironment = */ false,
 	)
 
 	// Execution should fail, as the number of nanoseconds in the
@@ -914,6 +923,7 @@ func TestLocalBuildExecutorInputRootIOFailureDuringExecution(t *testing.T) {
 		/* maximumMessageSizeBytes = */ 10000,
 		/* environmentVariables = */ map[string]string{},
 		/* forceUploadTreesAndDirectories = */ false,
+		/* forwardAuxiliaryMetadataToEnvironment = */ false,
 	)
 
 	metadata := make(chan *remoteworker.CurrentState_Executing, 10)
@@ -1046,6 +1056,7 @@ func TestLocalBuildExecutorTimeoutDuringExecution(t *testing.T) {
 		/* maximumMessageSizeBytes = */ 10000,
 		/* environmentVariables = */ map[string]string{},
 		/* forceUploadTreesAndDirectories = */ false,
+		/* forwardAuxiliaryMetadataToEnvironment = */ false,
 	)
 
 	metadata := make(chan *remoteworker.CurrentState_Executing, 10)
@@ -1147,6 +1158,7 @@ func TestLocalBuildExecutorCharacterDeviceNodeCreationFailed(t *testing.T) {
 		/* maximumMessageSizeBytes = */ 10000,
 		/* environmentVariables = */ map[string]string{},
 		/* forceUploadTreesAndDirectories = */ false,
+		/* forwardAuxiliaryMetadataToEnvironment = */ false,
 	)
 
 	metadata := make(chan *remoteworker.CurrentState_Executing, 10)
