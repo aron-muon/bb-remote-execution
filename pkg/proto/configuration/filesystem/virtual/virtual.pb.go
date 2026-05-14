@@ -7,10 +7,6 @@
 package virtual
 
 import (
-	reflect "reflect"
-	sync "sync"
-	unsafe "unsafe"
-
 	eviction "github.com/buildbarn/bb-storage/pkg/proto/configuration/eviction"
 	jmespath "github.com/buildbarn/bb-storage/pkg/proto/configuration/jmespath"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -18,6 +14,9 @@ import (
 	durationpb "google.golang.org/protobuf/types/known/durationpb"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
 )
 
 const (
