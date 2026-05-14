@@ -135,4 +135,52 @@ message ApplicationConfiguration {
   // https://github.com/bazelbuild/bazel/blob/master/src/main/java/com/google/devtools/build/lib/exec/local/XcodeLocalEnvProvider.java
   // https://www.smileykeith.com/2021/03/08/locking-xcode-in-bazel/
   map<string, string> apple_xcode_developer_directories = 14;
+
+  // When set, inject credentials into the action's input root before
+  // execution. The runner reads a delegation JWT from the action's
+  // environment, exchanges it for real upstream credentials via the
+  // bb-credential-broker's /token endpoint, and writes credential
+  // files (.netrc, etc.) into the input root. The JWT is removed from
+  // the environment before the action process spawns.
+  //
+  // When unset, no credential injection occurs and behaviour is
+  // identical to upstream.
+  CredentialInjectionConfiguration credential_injection = 15;
+}
+
+message CredentialInjectionConfiguration {
+  // HTTP URL of the bb-credential-broker (in-cluster).
+  // Example: "http://bb-credential-broker.bazel-cache.svc.cluster.local:8080"
+  string broker_url = 1;
+
+  // Environment variable name carrying the delegation JWT. The runner
+  // removes this variable from the action's environment after reading
+  // it. Defaults to "BB_DELEGATION_JWT" when empty.
+  string delegation_env_var = 2;
+
+  // Destinations to mint credentials for. For each destination the
+  // runner calls POST /token and writes the specified credential files.
+  repeated CredentialDestination destinations = 3;
+}
+
+message CredentialDestination {
+  // Broker destination name (must match the broker's destinations config).
+  string name = 1;
+
+  // Credential files to write after minting the token.
+  repeated CredentialFile credential_files = 2;
+}
+
+message CredentialFile {
+  // Credential file format. Currently only "netrc" is supported.
+  string type = 1;
+
+  // For type="netrc": the machine hostname.
+  string machine = 2;
+
+  // For type="netrc": the login field (e.g. "token" for JFrog).
+  string login = 3;
+
+  // Path relative to the input root directory (e.g. ".netrc").
+  string path = 4;
 }
