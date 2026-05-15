@@ -25,17 +25,18 @@ git_override(
 
 git_override(
     module_name = "com_github_buildbarn_bb_storage",
-    # Hotfix: aron-muon/bb-storage @ aron/exit-cleanly-on-signal-self-race
-    # Drops the signal.Reset+process.Signal+sleep+os.Exit dance in
-    # terminateWithSignal in favour of os.Exit(0) directly. signal.Reset
-    # only disables Go's user-channel routing; the runtime trampoline
-    # still intercepts the raised signal and dispatches to
-    # runtime.dieFromSignal, which falls through to exit(2) under
-    # PID-1-in-a-namespace + multi-goroutine conditions (validated on
-    # staging: every clean shutdown produced container exit 2). The
-    # fallback time.Sleep + os.Exit(0) never ran because the runtime
-    # exited first. Revert once upstream lands a fix.
-    commit = "e6b2ba908273c58756bea09dcdf1531e93227844",
+    # Pinned to aron-muon/bb-storage main (rebased on top of upstream
+    # 37f0e8b "perf: reduce allocations on the digest and buffer hot
+    # paths") which carries two fork-only patches:
+    #   - 886c7e8 "program: split signal-exit policy by routine type"
+    #     (= upstream PR #337). Adds program.WithDaemonExit() so daemons
+    #     opt into exit 0 on graceful SIGTERM; one-shot tools keep the
+    #     POSIX-conventional exit 128+sig. Without it, every clean
+    #     shutdown produced container exit 2 (Go's runtime
+    #     dieFromSignal trap). Revert to upstream once #337 merges.
+    #   - e6c02a0 "fix: return server response on compressed ByteStream
+    #     Write early close".
+    commit = "e6c02a088e54b659728ea936592a13933aa6333f",
     remote = "https://github.com/aron-muon/bb-storage.git",
 )
 

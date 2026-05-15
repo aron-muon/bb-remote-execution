@@ -232,5 +232,5 @@ func main() {
 
 		lifecycleState.MarkReadyAndWait(siblingsGroup)
 		return nil
-	})
+	}, program.WithDaemonExit())
 }
