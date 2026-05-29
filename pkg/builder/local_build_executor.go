@@ -3,10 +3,12 @@ package builder
 import (
 	"context"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
 	remoteexecution "github.com/bazelbuild/remote-apis/build/bazel/remote/execution/v2"
+	"github.com/buildbarn/bb-remote-execution/pkg/builder/egressauth"
 	re_clock "github.com/buildbarn/bb-remote-execution/pkg/clock"
 	"github.com/buildbarn/bb-remote-execution/pkg/filesystem/access"
 	"github.com/buildbarn/bb-remote-execution/pkg/filesystem/pool"
@@ -21,6 +23,7 @@ import (
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -65,32 +68,47 @@ func (el *capturingErrorLogger) GetError() error {
 }
 
 type localBuildExecutor struct {
-	contentAddressableStorage             blobstore.BlobAccess
-	buildDirectoryCreator                 BuildDirectoryCreator
-	runner                                runner_pb.RunnerClient
-	clock                                 clock.Clock
-	maximumWritableFileUploadDelay        time.Duration
-	inputRootCharacterDevices             map[path.Component]filesystem.DeviceNumber
-	maximumMessageSizeBytes               int
-	environmentVariables                  map[string]string
-	forceUploadTreesAndDirectories        bool
-	forwardAuxiliaryMetadataToEnvironment bool
+	contentAddressableStorage      blobstore.BlobAccess
+	buildDirectoryCreator          BuildDirectoryCreator
+	runner                         runner_pb.RunnerClient
+	clock                          clock.Clock
+	maximumWritableFileUploadDelay time.Duration
+	inputRootCharacterDevices      map[path.Component]filesystem.DeviceNumber
+	maximumMessageSizeBytes        int
+	environmentVariables           map[string]string
+	forceUploadTreesAndDirectories bool
+	egressAuthRelay                egressauth.Relay
+	egressAuthGrantHeaderName      string
 }
 
 // NewLocalBuildExecutor returns a BuildExecutor that executes build
 // steps on the local system.
-func NewLocalBuildExecutor(contentAddressableStorage blobstore.BlobAccess, buildDirectoryCreator BuildDirectoryCreator, runner runner_pb.RunnerClient, clock clock.Clock, maximumWritableFileUploadDelay time.Duration, inputRootCharacterDevices map[path.Component]filesystem.DeviceNumber, maximumMessageSizeBytes int, environmentVariables map[string]string, forceUploadTreesAndDirectories, forwardAuxiliaryMetadataToEnvironment bool) BuildExecutor {
+//
+// If egressAuthRelay is non-nil, the worker looks for a delegation grant
+// forwarded by the scheduler as a remoteworker.ForwardedRequestHeader
+// named egressAuthGrantHeaderName. When such a grant is present, it is
+// relayed to the egress authentication daemon before the action runs, and
+// the proxy environment variables (and optional files) the daemon returns
+// are injected into the action at execution time. The grant itself is
+// never injected into the action's environment, command, or input root,
+// and never becomes part of the action digest.
+//
+// When no grant header is present, the action runs normally without
+// sidecar routing (fail-open): actions that do not require authenticated
+// egress are unaffected.
+func NewLocalBuildExecutor(contentAddressableStorage blobstore.BlobAccess, buildDirectoryCreator BuildDirectoryCreator, runner runner_pb.RunnerClient, clock clock.Clock, maximumWritableFileUploadDelay time.Duration, inputRootCharacterDevices map[path.Component]filesystem.DeviceNumber, maximumMessageSizeBytes int, environmentVariables map[string]string, forceUploadTreesAndDirectories bool, egressAuthRelay egressauth.Relay, egressAuthGrantHeaderName string) BuildExecutor {
 	return &localBuildExecutor{
-		contentAddressableStorage:             contentAddressableStorage,
-		buildDirectoryCreator:                 buildDirectoryCreator,
-		runner:                                runner,
-		clock:                                 clock,
-		maximumWritableFileUploadDelay:        maximumWritableFileUploadDelay,
-		inputRootCharacterDevices:             inputRootCharacterDevices,
-		maximumMessageSizeBytes:               maximumMessageSizeBytes,
-		environmentVariables:                  environmentVariables,
-		forceUploadTreesAndDirectories:        forceUploadTreesAndDirectories,
-		forwardAuxiliaryMetadataToEnvironment: forwardAuxiliaryMetadataToEnvironment,
+		contentAddressableStorage:      contentAddressableStorage,
+		buildDirectoryCreator:          buildDirectoryCreator,
+		runner:                         runner,
+		clock:                          clock,
+		maximumWritableFileUploadDelay: maximumWritableFileUploadDelay,
+		inputRootCharacterDevices:      inputRootCharacterDevices,
+		maximumMessageSizeBytes:        maximumMessageSizeBytes,
+		environmentVariables:           environmentVariables,
+		forceUploadTreesAndDirectories: forceUploadTreesAndDirectories,
+		egressAuthRelay:                egressAuthRelay,
+		egressAuthGrantHeaderName:      egressAuthGrantHeaderName,
 	}
 }
 
@@ -273,18 +291,20 @@ func (be *localBuildExecutor) Execute(ctx context.Context, filePool pool.FilePoo
 	for name, value := range be.environmentVariables {
 		environmentVariables[name] = value
 	}
-	if be.forwardAuxiliaryMetadataToEnvironment {
-		for _, anyMsg := range request.AuxiliaryMetadata {
-			var header remoteworker.ForwardedRequestHeader
-			if anyMsg.MessageIs(&header) {
-				if err := anyMsg.UnmarshalTo(&header); err == nil {
-					environmentVariables[header.Name] = header.Value
-				}
-			}
-		}
-	}
 	for _, environmentVariable := range command.EnvironmentVariables {
 		environmentVariables[environmentVariable.Name] = environmentVariable.Value
+	}
+
+	// Relay a client-supplied delegation grant to the egress-authd sidecar
+	// (when enabled and present) and inject the proxy environment variables
+	// (and any files) it returns. See applyEgressAuth: the grant is never
+	// written to the action's environment, command, input root, or digest,
+	// and the action runs normally when no grant is present (fail-open).
+	egressAuthCleanup, err := be.applyEgressAuth(ctx, request.AuxiliaryMetadata, environmentVariables, inputRootDirectory)
+	defer egressAuthCleanup()
+	if err != nil {
+		attachErrorToExecuteResponse(response, err)
+		return response
 	}
 
 	// Invoke the command.
@@ -362,6 +382,143 @@ func (be *localBuildExecutor) Execute(ctx context.Context, filePool pool.FilePoo
 	serverLogsDirectoryUploader.uploadDirectory(buildDirectory, serverLogsDirectoryComponent, nil)
 
 	return response
+}
+
+// egressAuthReleaseTimeout bounds the best-effort release of an egress
+// authentication registration. Release runs on a fresh context rather
+// than the action's (which may already be cancelled when the action
+// finishes or times out), so the sidecar is told to reclaim the proxy
+// promptly instead of waiting for the registration's TTL to lapse.
+const egressAuthReleaseTimeout = 10 * time.Second
+
+// applyEgressAuth relays a client-supplied delegation grant to the
+// egress-authd sidecar -- when egress authentication is enabled and a
+// grant header is present in auxiliaryMetadata -- and injects the proxy
+// environment variables the daemon returns into environmentVariables, plus
+// any returned files into inputRootDirectory. It returns a cleanup
+// function that releases the registration; the function is always non-nil
+// and safe to call even when nothing was registered.
+//
+// The grant is relayed out-of-band only: it is never written to
+// environmentVariables, the command, the input root, or the action
+// digest. When egress authentication is disabled or no grant header is
+// present, the action runs normally (fail-open): cleanup is a no-op and no
+// error is returned.
+func (be *localBuildExecutor) applyEgressAuth(ctx context.Context, auxiliaryMetadata []*anypb.Any, environmentVariables map[string]string, inputRootDirectory BuildDirectory) (func(), error) {
+	noCleanup := func() {}
+	if be.egressAuthRelay == nil {
+		return noCleanup, nil
+	}
+	grant, ok := egressauth.ExtractGrant(auxiliaryMetadata, be.egressAuthGrantHeaderName)
+	if !ok {
+		return noCleanup, nil
+	}
+	registration, err := be.egressAuthRelay.Register(ctx, egressauth.Action{Grant: grant})
+	if err != nil {
+		return noCleanup, util.StatusWrap(err, "Failed to register action with the egress authentication daemon")
+	}
+	cleanup := func() {
+		// Best-effort: a release failure must not affect the action's
+		// result (the daemon reclaims the proxy after expires_at anyway).
+		// A fresh context is used so release still reaches the daemon when
+		// the action's context has already been cancelled.
+		releaseCtx, cancel := context.WithTimeout(context.Background(), egressAuthReleaseTimeout)
+		defer cancel()
+		if err := be.egressAuthRelay.Release(releaseCtx, registration.ActionID); err != nil {
+			util.DefaultErrorLogger.Log(util.StatusWrap(err, "Failed to release egress authentication registration"))
+		}
+	}
+	// Inject the proxy environment variables into the execution-time map
+	// (outside command.EnvironmentVariables, so outside the action digest).
+	for name, value := range registration.Environment {
+		environmentVariables[name] = value
+	}
+	// Materialize any files the daemon asked for (e.g. a credential-helper
+	// config) into the action's input root before the action runs. These
+	// files are required for authenticated egress to function, so a write
+	// failure fails the action (the registration is still released via the
+	// returned cleanup).
+	if err := writeEgressAuthFiles(inputRootDirectory, registration.Files); err != nil {
+		return cleanup, util.StatusWrap(err, "Failed to write egress authentication files into input root")
+	}
+	return cleanup, nil
+}
+
+// writeEgressAuthFiles materializes the files returned by the egress
+// authentication daemon into the action's input root, prior to execution.
+//
+// Files are written through the filesystem.Directory interface, so this
+// is supported for POSIX-backed (naive) build directories. The grant is
+// never among these files: the daemon only ever returns non-secret helper
+// material (e.g. a credential-helper configuration that points the
+// action's tooling at the loopback proxy).
+func writeEgressAuthFiles(inputRootDirectory BuildDirectory, files []egressauth.File) error {
+	if len(files) == 0 {
+		return nil
+	}
+	writableRoot, ok := any(inputRootDirectory).(filesystem.Directory)
+	if !ok {
+		return status.Error(codes.Unimplemented, "The build directory does not support writing egress authentication files")
+	}
+	for _, file := range files {
+		if err := writeEgressAuthFile(writableRoot, file); err != nil {
+			return util.StatusWrapf(err, "Failed to write %#v", file.Path)
+		}
+	}
+	return nil
+}
+
+// writeEgressAuthFile writes a single file (creating any parent
+// directories) at a path relative to the input root. The path is
+// interpreted as a slash-separated relative path; absolute paths and "."
+// or ".." components are rejected so a file can never escape the input
+// root.
+func writeEgressAuthFile(root filesystem.Directory, file egressauth.File) error {
+	parts := strings.Split(file.Path, "/")
+	dirComponents := make([]path.Component, 0, len(parts))
+	for _, part := range parts[:len(parts)-1] {
+		if part == "" || part == "." || part == ".." {
+			return status.Errorf(codes.InvalidArgument, "Invalid path component %#v", part)
+		}
+		component, ok := path.NewComponent(part)
+		if !ok {
+			return status.Errorf(codes.InvalidArgument, "Invalid path component %#v", part)
+		}
+		dirComponents = append(dirComponents, component)
+	}
+	fileNameStr := parts[len(parts)-1]
+	if fileNameStr == "" || fileNameStr == "." || fileNameStr == ".." {
+		return status.Errorf(codes.InvalidArgument, "Invalid file name %#v", fileNameStr)
+	}
+	fileName, ok := path.NewComponent(fileNameStr)
+	if !ok {
+		return status.Errorf(codes.InvalidArgument, "Invalid file name %#v", fileNameStr)
+	}
+
+	// Descend into (creating as needed) each intermediate directory,
+	// then write the final component as a regular file.
+	dir := filesystem.NopDirectoryCloser(root)
+	defer func() { dir.Close() }()
+	for _, component := range dirComponents {
+		if err := dir.Mkdir(component, 0o777); err != nil && !os.IsExist(err) {
+			return util.StatusWrapf(err, "Failed to create directory %#v", component.String())
+		}
+		child, err := dir.EnterDirectory(component)
+		if err != nil {
+			return util.StatusWrapf(err, "Failed to enter directory %#v", component.String())
+		}
+		dir.Close()
+		dir = child
+	}
+	w, err := dir.OpenWrite(fileName, filesystem.CreateReuse(0o644))
+	if err != nil {
+		return err
+	}
+	defer w.Close()
+	if _, err := w.WriteAt(file.Contents, 0); err != nil {
+		return err
+	}
+	return nil
 }
 
 type serverLogsDirectoryUploader struct {

@@ -1,0 +1,36 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "egressauth",
+    srcs = [
+        "egress_auth.go",
+        "grant.go",
+        "socket_relay.go",
+    ],
+    importpath = "github.com/buildbarn/bb-remote-execution/pkg/builder/egressauth",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//pkg/proto/remoteworker",
+        "@com_github_buildbarn_bb_storage//pkg/clock",
+        "@com_github_buildbarn_bb_storage//pkg/util",
+        "@org_golang_google_grpc//codes",
+        "@org_golang_google_grpc//status",
+        "@org_golang_google_protobuf//types/known/anypb",
+    ],
+)
+
+go_test(
+    name = "egressauth_test",
+    srcs = [
+        "egress_auth_test.go",
+        "grant_test.go",
+    ],
+    deps = [
+        ":egressauth",
+        "//pkg/proto/remoteworker",
+        "@com_github_buildbarn_bb_storage//pkg/clock",
+        "@com_github_stretchr_testify//require",
+        "@org_golang_google_protobuf//types/known/anypb",
+        "@org_golang_google_protobuf//types/known/emptypb",
+    ],
+)

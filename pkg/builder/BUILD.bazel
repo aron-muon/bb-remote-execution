@@ -33,6 +33,7 @@ go_library(
     importpath = "github.com/buildbarn/bb-remote-execution/pkg/builder",
     visibility = ["//visibility:public"],
     deps = [
+        "//pkg/builder/egressauth",
         "//pkg/cas",
         "//pkg/cleaner",
         "//pkg/clock",
@@ -86,6 +87,7 @@ go_test(
         "completed_action_logger_test.go",
         "completed_action_logging_build_executor_test.go",
         "cost_computing_build_executor_test.go",
+        "egress_auth_internal_test.go",
         "file_pool_stats_build_executor_test.go",
         "local_build_executor_test.go",
         "naive_build_directory_test.go",
@@ -99,9 +101,10 @@ go_test(
         "timestamped_build_executor_test.go",
         "tracing_build_executor_test.go",
     ],
+    embed = [":builder"],
     deps = [
-        ":builder",
         "//internal/mock",
+        "//pkg/builder/egressauth",
         "//pkg/cleaner",
         "//pkg/clock",
         "//pkg/filesystem/access",

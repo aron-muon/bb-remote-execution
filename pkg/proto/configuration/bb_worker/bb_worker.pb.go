@@ -455,7 +455,7 @@ type RunnerConfiguration struct {
 	MaximumConsecutiveTestInfrastructureFailures uint32                                                  `protobuf:"varint,14,opt,name=maximum_consecutive_test_infrastructure_failures,json=maximumConsecutiveTestInfrastructureFailures,proto3" json:"maximum_consecutive_test_infrastructure_failures,omitempty"`
 	BuildDirectoryOwnerUserId                    uint32                                                  `protobuf:"varint,15,opt,name=build_directory_owner_user_id,json=buildDirectoryOwnerUserId,proto3" json:"build_directory_owner_user_id,omitempty"`
 	BuildDirectoryOwnerGroupId                   uint32                                                  `protobuf:"varint,16,opt,name=build_directory_owner_group_id,json=buildDirectoryOwnerGroupId,proto3" json:"build_directory_owner_group_id,omitempty"`
-	ForwardAuxiliaryMetadataToEnvironment        bool                                                    `protobuf:"varint,17,opt,name=forward_auxiliary_metadata_to_environment,json=forwardAuxiliaryMetadataToEnvironment,proto3" json:"forward_auxiliary_metadata_to_environment,omitempty"`
+	EgressAuthSidecar                            *EgressAuthSidecarConfiguration                         `protobuf:"bytes,17,opt,name=egress_auth_sidecar,json=egressAuthSidecar,proto3" json:"egress_auth_sidecar,omitempty"`
 	unknownFields                                protoimpl.UnknownFields
 	sizeCache                                    protoimpl.SizeCache
 }
@@ -588,11 +588,11 @@ func (x *RunnerConfiguration) GetBuildDirectoryOwnerGroupId() uint32 {
 	return 0
 }
 
-func (x *RunnerConfiguration) GetForwardAuxiliaryMetadataToEnvironment() bool {
+func (x *RunnerConfiguration) GetEgressAuthSidecar() *EgressAuthSidecarConfiguration {
 	if x != nil {
-		return x.ForwardAuxiliaryMetadataToEnvironment
+		return x.EgressAuthSidecar
 	}
-	return false
+	return nil
 }
 
 type CompletedActionLoggingConfiguration struct {
@@ -775,6 +775,66 @@ func (x *HttpExecutionTimeoutCompensator) GetResumeUrl() string {
 	return ""
 }
 
+type EgressAuthSidecarConfiguration struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Enabled         bool                   `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	ControlSocket   string                 `protobuf:"bytes,2,opt,name=control_socket,json=controlSocket,proto3" json:"control_socket,omitempty"`
+	GrantHeaderName string                 `protobuf:"bytes,3,opt,name=grant_header_name,json=grantHeaderName,proto3" json:"grant_header_name,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *EgressAuthSidecarConfiguration) Reset() {
+	*x = EgressAuthSidecarConfiguration{}
+	mi := &file_github_com_buildbarn_bb_remote_execution_pkg_proto_configuration_bb_worker_bb_worker_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EgressAuthSidecarConfiguration) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EgressAuthSidecarConfiguration) ProtoMessage() {}
+
+func (x *EgressAuthSidecarConfiguration) ProtoReflect() protoreflect.Message {
+	mi := &file_github_com_buildbarn_bb_remote_execution_pkg_proto_configuration_bb_worker_bb_worker_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EgressAuthSidecarConfiguration.ProtoReflect.Descriptor instead.
+func (*EgressAuthSidecarConfiguration) Descriptor() ([]byte, []int) {
+	return file_github_com_buildbarn_bb_remote_execution_pkg_proto_configuration_bb_worker_bb_worker_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *EgressAuthSidecarConfiguration) GetEnabled() bool {
+	if x != nil {
+		return x.Enabled
+	}
+	return false
+}
+
+func (x *EgressAuthSidecarConfiguration) GetControlSocket() string {
+	if x != nil {
+		return x.ControlSocket
+	}
+	return ""
+}
+
+func (x *EgressAuthSidecarConfiguration) GetGrantHeaderName() string {
+	if x != nil {
+		return x.GrantHeaderName
+	}
+	return ""
+}
+
 var File_github_com_buildbarn_bb_remote_execution_pkg_proto_configuration_bb_worker_bb_worker_proto protoreflect.FileDescriptor
 
 const file_github_com_buildbarn_bb_remote_execution_pkg_proto_configuration_bb_worker_bb_worker_proto_rawDesc = "" +
@@ -816,7 +876,7 @@ const file_github_com_buildbarn_bb_remote_execution_pkg_proto_configuration_bb_w
 	"\x1ashuffle_directory_listings\x18\x03 \x01(\bR\x18shuffleDirectoryListings\x120\n" +
 	"\x14hidden_files_pattern\x18\x04 \x01(\tR\x12hiddenFilesPattern\x12e\n" +
 	"\"maximum_writable_file_upload_delay\x18\x05 \x01(\v2\x19.google.protobuf.DurationR\x1emaximumWritableFileUploadDelay\x12)\n" +
-	"\x10case_insensitive\x18\x06 \x01(\bR\x0fcaseInsensitive\"\x9e\v\n" +
+	"\x10case_insensitive\x18\x06 \x01(\bR\x0fcaseInsensitive\"\xb7\v\n" +
 	"\x13RunnerConfiguration\x12M\n" +
 	"\bendpoint\x18\x01 \x01(\v21.buildbarn.configuration.grpc.ClientConfigurationR\bendpoint\x12 \n" +
 	"\vconcurrency\x18\x02 \x01(\x04R\vconcurrency\x120\n" +
@@ -833,8 +893,8 @@ const file_github_com_buildbarn_bb_remote_execution_pkg_proto_configuration_bb_w
 	"\x15environment_variables\x18\v \x03(\v2P.buildbarn.configuration.bb_worker.RunnerConfiguration.EnvironmentVariablesEntryR\x14environmentVariables\x12f\n" +
 	"0maximum_consecutive_test_infrastructure_failures\x18\x0e \x01(\rR,maximumConsecutiveTestInfrastructureFailures\x12@\n" +
 	"\x1dbuild_directory_owner_user_id\x18\x0f \x01(\rR\x19buildDirectoryOwnerUserId\x12B\n" +
-	"\x1ebuild_directory_owner_group_id\x18\x10 \x01(\rR\x1abuildDirectoryOwnerGroupId\x12X\n" +
-	")forward_auxiliary_metadata_to_environment\x18\x11 \x01(\bR%forwardAuxiliaryMetadataToEnvironment\x1a;\n" +
+	"\x1ebuild_directory_owner_group_id\x18\x10 \x01(\rR\x1abuildDirectoryOwnerGroupId\x12q\n" +
+	"\x13egress_auth_sidecar\x18\x11 \x01(\v2A.buildbarn.configuration.bb_worker.EgressAuthSidecarConfigurationR\x11egressAuthSidecar\x1a;\n" +
 	"\rWorkerIdEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1ay\n" +
@@ -858,7 +918,11 @@ const file_github_com_buildbarn_bb_remote_execution_pkg_proto_configuration_bb_w
 	"\vsuspend_url\x18\x02 \x01(\tR\n" +
 	"suspendUrl\x12\x1d\n" +
 	"\n" +
-	"resume_url\x18\x03 \x01(\tR\tresumeUrlBLZJgithub.com/buildbarn/bb-remote-execution/pkg/proto/configuration/bb_workerb\x06proto3"
+	"resume_url\x18\x03 \x01(\tR\tresumeUrl\"\x8d\x01\n" +
+	"\x1eEgressAuthSidecarConfiguration\x12\x18\n" +
+	"\aenabled\x18\x01 \x01(\bR\aenabled\x12%\n" +
+	"\x0econtrol_socket\x18\x02 \x01(\tR\rcontrolSocket\x12*\n" +
+	"\x11grant_header_name\x18\x03 \x01(\tR\x0fgrantHeaderNameBLZJgithub.com/buildbarn/bb-remote-execution/pkg/proto/configuration/bb_workerb\x06proto3"
 
 var (
 	file_github_com_buildbarn_bb_remote_execution_pkg_proto_configuration_bb_worker_bb_worker_proto_rawDescOnce sync.Once
@@ -872,7 +936,7 @@ func file_github_com_buildbarn_bb_remote_execution_pkg_proto_configuration_bb_wo
 	return file_github_com_buildbarn_bb_remote_execution_pkg_proto_configuration_bb_worker_bb_worker_proto_rawDescData
 }
 
-var file_github_com_buildbarn_bb_remote_execution_pkg_proto_configuration_bb_worker_bb_worker_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_github_com_buildbarn_bb_remote_execution_pkg_proto_configuration_bb_worker_bb_worker_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_github_com_buildbarn_bb_remote_execution_pkg_proto_configuration_bb_worker_bb_worker_proto_goTypes = []any{
 	(*ApplicationConfiguration)(nil),                    // 0: buildbarn.configuration.bb_worker.ApplicationConfiguration
 	(*BuildDirectoryConfiguration)(nil),                 // 1: buildbarn.configuration.bb_worker.BuildDirectoryConfiguration
@@ -882,55 +946,57 @@ var file_github_com_buildbarn_bb_remote_execution_pkg_proto_configuration_bb_wor
 	(*CompletedActionLoggingConfiguration)(nil),         // 5: buildbarn.configuration.bb_worker.CompletedActionLoggingConfiguration
 	(*PrefetchingConfiguration)(nil),                    // 6: buildbarn.configuration.bb_worker.PrefetchingConfiguration
 	(*HttpExecutionTimeoutCompensator)(nil),             // 7: buildbarn.configuration.bb_worker.HttpExecutionTimeoutCompensator
-	nil,                                                 // 8: buildbarn.configuration.bb_worker.RunnerConfiguration.WorkerIdEntry
-	nil,                                                 // 9: buildbarn.configuration.bb_worker.RunnerConfiguration.CostsPerSecondEntry
-	nil,                                                 // 10: buildbarn.configuration.bb_worker.RunnerConfiguration.EnvironmentVariablesEntry
-	(*blobstore.BlobstoreConfiguration)(nil),            // 11: buildbarn.configuration.blobstore.BlobstoreConfiguration
-	(*grpc.ClientConfiguration)(nil),                    // 12: buildbarn.configuration.grpc.ClientConfiguration
-	(*global.Configuration)(nil),                        // 13: buildbarn.configuration.global.Configuration
-	(*filesystem.FilePoolConfiguration)(nil),            // 14: buildbarn.configuration.filesystem.FilePoolConfiguration
-	(*cas.CachingDirectoryFetcherConfiguration)(nil),    // 15: buildbarn.configuration.cas.CachingDirectoryFetcherConfiguration
-	(*zstd.PoolConfiguration)(nil),                      // 16: buildbarn.configuration.zstd.PoolConfiguration
-	(eviction.CacheReplacementPolicy)(0),                // 17: buildbarn.configuration.eviction.CacheReplacementPolicy
-	(*virtual.MountConfiguration)(nil),                  // 18: buildbarn.configuration.filesystem.virtual.MountConfiguration
-	(*durationpb.Duration)(nil),                         // 19: google.protobuf.Duration
-	(*v2.Platform)(nil),                                 // 20: build.bazel.remote.execution.v2.Platform
-	(*blobstore.BlobAccessConfiguration)(nil),           // 21: buildbarn.configuration.blobstore.BlobAccessConfiguration
-	(*client.Configuration)(nil),                        // 22: buildbarn.configuration.http.client.Configuration
-	(*resourceusage.MonetaryResourceUsage_Expense)(nil), // 23: buildbarn.resourceusage.MonetaryResourceUsage.Expense
+	(*EgressAuthSidecarConfiguration)(nil),              // 8: buildbarn.configuration.bb_worker.EgressAuthSidecarConfiguration
+	nil,                                                 // 9: buildbarn.configuration.bb_worker.RunnerConfiguration.WorkerIdEntry
+	nil,                                                 // 10: buildbarn.configuration.bb_worker.RunnerConfiguration.CostsPerSecondEntry
+	nil,                                                 // 11: buildbarn.configuration.bb_worker.RunnerConfiguration.EnvironmentVariablesEntry
+	(*blobstore.BlobstoreConfiguration)(nil),            // 12: buildbarn.configuration.blobstore.BlobstoreConfiguration
+	(*grpc.ClientConfiguration)(nil),                    // 13: buildbarn.configuration.grpc.ClientConfiguration
+	(*global.Configuration)(nil),                        // 14: buildbarn.configuration.global.Configuration
+	(*filesystem.FilePoolConfiguration)(nil),            // 15: buildbarn.configuration.filesystem.FilePoolConfiguration
+	(*cas.CachingDirectoryFetcherConfiguration)(nil),    // 16: buildbarn.configuration.cas.CachingDirectoryFetcherConfiguration
+	(*zstd.PoolConfiguration)(nil),                      // 17: buildbarn.configuration.zstd.PoolConfiguration
+	(eviction.CacheReplacementPolicy)(0),                // 18: buildbarn.configuration.eviction.CacheReplacementPolicy
+	(*virtual.MountConfiguration)(nil),                  // 19: buildbarn.configuration.filesystem.virtual.MountConfiguration
+	(*durationpb.Duration)(nil),                         // 20: google.protobuf.Duration
+	(*v2.Platform)(nil),                                 // 21: build.bazel.remote.execution.v2.Platform
+	(*blobstore.BlobAccessConfiguration)(nil),           // 22: buildbarn.configuration.blobstore.BlobAccessConfiguration
+	(*client.Configuration)(nil),                        // 23: buildbarn.configuration.http.client.Configuration
+	(*resourceusage.MonetaryResourceUsage_Expense)(nil), // 24: buildbarn.resourceusage.MonetaryResourceUsage.Expense
 }
 var file_github_com_buildbarn_bb_remote_execution_pkg_proto_configuration_bb_worker_bb_worker_proto_depIdxs = []int32{
-	11, // 0: buildbarn.configuration.bb_worker.ApplicationConfiguration.blobstore:type_name -> buildbarn.configuration.blobstore.BlobstoreConfiguration
-	12, // 1: buildbarn.configuration.bb_worker.ApplicationConfiguration.scheduler:type_name -> buildbarn.configuration.grpc.ClientConfiguration
-	13, // 2: buildbarn.configuration.bb_worker.ApplicationConfiguration.global:type_name -> buildbarn.configuration.global.Configuration
+	12, // 0: buildbarn.configuration.bb_worker.ApplicationConfiguration.blobstore:type_name -> buildbarn.configuration.blobstore.BlobstoreConfiguration
+	13, // 1: buildbarn.configuration.bb_worker.ApplicationConfiguration.scheduler:type_name -> buildbarn.configuration.grpc.ClientConfiguration
+	14, // 2: buildbarn.configuration.bb_worker.ApplicationConfiguration.global:type_name -> buildbarn.configuration.global.Configuration
 	1,  // 3: buildbarn.configuration.bb_worker.ApplicationConfiguration.build_directories:type_name -> buildbarn.configuration.bb_worker.BuildDirectoryConfiguration
-	14, // 4: buildbarn.configuration.bb_worker.ApplicationConfiguration.file_pool:type_name -> buildbarn.configuration.filesystem.FilePoolConfiguration
+	15, // 4: buildbarn.configuration.bb_worker.ApplicationConfiguration.file_pool:type_name -> buildbarn.configuration.filesystem.FilePoolConfiguration
 	5,  // 5: buildbarn.configuration.bb_worker.ApplicationConfiguration.completed_action_loggers:type_name -> buildbarn.configuration.bb_worker.CompletedActionLoggingConfiguration
-	15, // 6: buildbarn.configuration.bb_worker.ApplicationConfiguration.directory_cache:type_name -> buildbarn.configuration.cas.CachingDirectoryFetcherConfiguration
+	16, // 6: buildbarn.configuration.bb_worker.ApplicationConfiguration.directory_cache:type_name -> buildbarn.configuration.cas.CachingDirectoryFetcherConfiguration
 	6,  // 7: buildbarn.configuration.bb_worker.ApplicationConfiguration.prefetching:type_name -> buildbarn.configuration.bb_worker.PrefetchingConfiguration
 	7,  // 8: buildbarn.configuration.bb_worker.ApplicationConfiguration.http_execution_timeout_compensators:type_name -> buildbarn.configuration.bb_worker.HttpExecutionTimeoutCompensator
-	16, // 9: buildbarn.configuration.bb_worker.ApplicationConfiguration.zstd_pool:type_name -> buildbarn.configuration.zstd.PoolConfiguration
+	17, // 9: buildbarn.configuration.bb_worker.ApplicationConfiguration.zstd_pool:type_name -> buildbarn.configuration.zstd.PoolConfiguration
 	2,  // 10: buildbarn.configuration.bb_worker.BuildDirectoryConfiguration.native:type_name -> buildbarn.configuration.bb_worker.NativeBuildDirectoryConfiguration
 	3,  // 11: buildbarn.configuration.bb_worker.BuildDirectoryConfiguration.virtual:type_name -> buildbarn.configuration.bb_worker.VirtualBuildDirectoryConfiguration
 	4,  // 12: buildbarn.configuration.bb_worker.BuildDirectoryConfiguration.runners:type_name -> buildbarn.configuration.bb_worker.RunnerConfiguration
-	17, // 13: buildbarn.configuration.bb_worker.NativeBuildDirectoryConfiguration.cache_replacement_policy:type_name -> buildbarn.configuration.eviction.CacheReplacementPolicy
-	18, // 14: buildbarn.configuration.bb_worker.VirtualBuildDirectoryConfiguration.mount:type_name -> buildbarn.configuration.filesystem.virtual.MountConfiguration
-	19, // 15: buildbarn.configuration.bb_worker.VirtualBuildDirectoryConfiguration.maximum_execution_timeout_compensation:type_name -> google.protobuf.Duration
-	19, // 16: buildbarn.configuration.bb_worker.VirtualBuildDirectoryConfiguration.maximum_writable_file_upload_delay:type_name -> google.protobuf.Duration
-	12, // 17: buildbarn.configuration.bb_worker.RunnerConfiguration.endpoint:type_name -> buildbarn.configuration.grpc.ClientConfiguration
-	20, // 18: buildbarn.configuration.bb_worker.RunnerConfiguration.platform:type_name -> build.bazel.remote.execution.v2.Platform
-	8,  // 19: buildbarn.configuration.bb_worker.RunnerConfiguration.worker_id:type_name -> buildbarn.configuration.bb_worker.RunnerConfiguration.WorkerIdEntry
-	9,  // 20: buildbarn.configuration.bb_worker.RunnerConfiguration.costs_per_second:type_name -> buildbarn.configuration.bb_worker.RunnerConfiguration.CostsPerSecondEntry
-	10, // 21: buildbarn.configuration.bb_worker.RunnerConfiguration.environment_variables:type_name -> buildbarn.configuration.bb_worker.RunnerConfiguration.EnvironmentVariablesEntry
-	12, // 22: buildbarn.configuration.bb_worker.CompletedActionLoggingConfiguration.client:type_name -> buildbarn.configuration.grpc.ClientConfiguration
-	21, // 23: buildbarn.configuration.bb_worker.PrefetchingConfiguration.file_system_access_cache:type_name -> buildbarn.configuration.blobstore.BlobAccessConfiguration
-	22, // 24: buildbarn.configuration.bb_worker.HttpExecutionTimeoutCompensator.http_client:type_name -> buildbarn.configuration.http.client.Configuration
-	23, // 25: buildbarn.configuration.bb_worker.RunnerConfiguration.CostsPerSecondEntry.value:type_name -> buildbarn.resourceusage.MonetaryResourceUsage.Expense
-	26, // [26:26] is the sub-list for method output_type
-	26, // [26:26] is the sub-list for method input_type
-	26, // [26:26] is the sub-list for extension type_name
-	26, // [26:26] is the sub-list for extension extendee
-	0,  // [0:26] is the sub-list for field type_name
+	18, // 13: buildbarn.configuration.bb_worker.NativeBuildDirectoryConfiguration.cache_replacement_policy:type_name -> buildbarn.configuration.eviction.CacheReplacementPolicy
+	19, // 14: buildbarn.configuration.bb_worker.VirtualBuildDirectoryConfiguration.mount:type_name -> buildbarn.configuration.filesystem.virtual.MountConfiguration
+	20, // 15: buildbarn.configuration.bb_worker.VirtualBuildDirectoryConfiguration.maximum_execution_timeout_compensation:type_name -> google.protobuf.Duration
+	20, // 16: buildbarn.configuration.bb_worker.VirtualBuildDirectoryConfiguration.maximum_writable_file_upload_delay:type_name -> google.protobuf.Duration
+	13, // 17: buildbarn.configuration.bb_worker.RunnerConfiguration.endpoint:type_name -> buildbarn.configuration.grpc.ClientConfiguration
+	21, // 18: buildbarn.configuration.bb_worker.RunnerConfiguration.platform:type_name -> build.bazel.remote.execution.v2.Platform
+	9,  // 19: buildbarn.configuration.bb_worker.RunnerConfiguration.worker_id:type_name -> buildbarn.configuration.bb_worker.RunnerConfiguration.WorkerIdEntry
+	10, // 20: buildbarn.configuration.bb_worker.RunnerConfiguration.costs_per_second:type_name -> buildbarn.configuration.bb_worker.RunnerConfiguration.CostsPerSecondEntry
+	11, // 21: buildbarn.configuration.bb_worker.RunnerConfiguration.environment_variables:type_name -> buildbarn.configuration.bb_worker.RunnerConfiguration.EnvironmentVariablesEntry
+	8,  // 22: buildbarn.configuration.bb_worker.RunnerConfiguration.egress_auth_sidecar:type_name -> buildbarn.configuration.bb_worker.EgressAuthSidecarConfiguration
+	13, // 23: buildbarn.configuration.bb_worker.CompletedActionLoggingConfiguration.client:type_name -> buildbarn.configuration.grpc.ClientConfiguration
+	22, // 24: buildbarn.configuration.bb_worker.PrefetchingConfiguration.file_system_access_cache:type_name -> buildbarn.configuration.blobstore.BlobAccessConfiguration
+	23, // 25: buildbarn.configuration.bb_worker.HttpExecutionTimeoutCompensator.http_client:type_name -> buildbarn.configuration.http.client.Configuration
+	24, // 26: buildbarn.configuration.bb_worker.RunnerConfiguration.CostsPerSecondEntry.value:type_name -> buildbarn.resourceusage.MonetaryResourceUsage.Expense
+	27, // [27:27] is the sub-list for method output_type
+	27, // [27:27] is the sub-list for method input_type
+	27, // [27:27] is the sub-list for extension type_name
+	27, // [27:27] is the sub-list for extension extendee
+	0,  // [0:27] is the sub-list for field type_name
 }
 
 func init() {
@@ -950,7 +1016,7 @@ func file_github_com_buildbarn_bb_remote_execution_pkg_proto_configuration_bb_wo
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_github_com_buildbarn_bb_remote_execution_pkg_proto_configuration_bb_worker_bb_worker_proto_rawDesc), len(file_github_com_buildbarn_bb_remote_execution_pkg_proto_configuration_bb_worker_bb_worker_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   11,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

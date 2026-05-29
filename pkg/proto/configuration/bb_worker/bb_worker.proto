@@ -403,20 +403,26 @@ message RunnerConfiguration {
   // user that is used by bb_runner to run actions.
   uint32 build_directory_owner_group_id = 16;
 
-  // When true, ForwardedRequestHeader messages found in the inbound
-  // DesiredState_Executing.auxiliary_metadata are decoded and injected
-  // into the action's environment variables before the runner is
-  // invoked. This enables per-build identity tokens (e.g.,
-  // BB_DELEGATION_JWT from bb-credential-broker) to reach the action
-  // process tree without being part of the Action digest.
+  // When set, the worker relays a delegation grant supplied by the
+  // client to a per-node egress authentication daemon ("egress-authd")
+  // before running each action, and injects the proxy environment
+  // variables (and optional credential-helper files) it returns into the
+  // action's execution environment.
   //
-  // Environment variables set this way are overridden by variables
-  // from the Command proto (which is part of the Action digest), so
-  // a malicious client cannot shadow a digest-committed variable.
+  // This is used to give actions authenticated network egress without
+  // ever handing them a long-lived credential: the worker performs the
+  // grant exchange out-of-band and the action only ever sees proxy
+  // environment variables (e.g. HTTPS_PROXY) pointing at a loopback port
+  // held open by the sidecar for the duration of the action. The grant
+  // itself is NEVER injected into the action's environment, command, or
+  // input root, and is never part of the action digest.
   //
-  // When false (default), forwarded headers in auxiliary_metadata are
-  // ignored and behaviour is identical to upstream.
-  bool forward_auxiliary_metadata_to_environment = 17;
+  // The grant is carried as a forwarded gRPC metadata header (see
+  // 'grant_header_name' and the scheduler's 'forward_request_headers'
+  // allowlist). When the grant header is absent the action runs normally
+  // with no sidecar routing (fail-open): actions that do not need
+  // authenticated egress are unaffected.
+  EgressAuthSidecarConfiguration egress_auth_sidecar = 17;
 }
 
 message CompletedActionLoggingConfiguration {
@@ -508,4 +514,29 @@ message HttpExecutionTimeoutCompensator {
   // server is expected to let the request block until resumption needs
   // to be performed. The response shall use status "200 OK".
   string resume_url = 3;
+}
+
+message EgressAuthSidecarConfiguration {
+  // Whether to relay delegation grants to the egress authentication
+  // daemon for actions run by this runner.
+  bool enabled = 1;
+
+  // Path of the Unix domain socket on which the egress authentication
+  // daemon exposes its control API. The worker issues "POST /actions"
+  // before running an action (when a grant is present) and best-effort
+  // "DELETE /actions/{action_id}" afterwards.
+  //
+  // Recommended value: /var/run/egress-authd/control.sock
+  string control_socket = 2;
+
+  // The name of the forwarded gRPC metadata header that carries the
+  // delegation grant. The worker scans
+  // DesiredState.Executing.auxiliary_metadata for a
+  // buildbarn.remoteworker.ForwardedRequestHeader with this name; if
+  // found, its value is POSTed to the sidecar as the grant. The matching
+  // header name must also appear in the scheduler's
+  // 'forward_request_headers' allowlist for it to reach the worker.
+  //
+  // When left empty, this defaults to "bb-delegation-grant".
+  string grant_header_name = 3;
 }
