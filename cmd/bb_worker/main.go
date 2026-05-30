@@ -16,6 +16,7 @@ import (
 
 	re_blobstore "github.com/buildbarn/bb-remote-execution/pkg/blobstore"
 	"github.com/buildbarn/bb-remote-execution/pkg/builder"
+	"github.com/buildbarn/bb-remote-execution/pkg/builder/egressauth"
 	"github.com/buildbarn/bb-remote-execution/pkg/cas"
 	"github.com/buildbarn/bb-remote-execution/pkg/cleaner"
 	re_clock "github.com/buildbarn/bb-remote-execution/pkg/clock"
@@ -47,6 +48,13 @@ import (
 
 	"go.opentelemetry.io/otel"
 )
+
+// egressAuthRegistrationTTL bounds the lifetime of an egress
+// authentication registration if the worker fails to release it (e.g.
+// the worker crashes mid-action). The daemon reclaims the proxy once
+// this elapses. It is intentionally generous relative to action
+// execution times.
+const egressAuthRegistrationTTL = 24 * time.Hour
 
 func main() {
 	program.RunMain(func(ctx context.Context, siblingsGroup, dependenciesGroup program.Group) error {
@@ -359,6 +367,24 @@ func main() {
 				}
 				runnerClient := runner_pb.NewRunnerClient(runnerConnection)
 
+				// Optional relay of a client-supplied delegation grant to a
+				// per-node egress authentication daemon. When enabled and a
+				// grant header is present, the worker authenticates network
+				// egress on the action's behalf without ever handing the
+				// action the grant or a credential. When no grant is present
+				// the action runs normally (fail-open).
+				var egressAuthRelay egressauth.Relay
+				egressAuthGrantHeaderName := egressauth.DefaultGrantHeaderName
+				if cfg := runnerConfiguration.EgressAuthSidecar; cfg.GetEnabled() {
+					if cfg.GetControlSocket() == "" {
+						return status.Error(codes.InvalidArgument, "Egress authentication sidecar is enabled but no control socket was configured")
+					}
+					egressAuthRelay = egressauth.NewSocketRelay(cfg.GetControlSocket(), egressAuthRegistrationTTL, clock.SystemClock)
+					if name := cfg.GetGrantHeaderName(); name != "" {
+						egressAuthGrantHeaderName = name
+					}
+				}
+
 				for threadID := uint64(0); threadID < runnerConfiguration.Concurrency; threadID++ {
 					// Per-worker separate writer of the Content
 					// Addressable Storage that batches writes after
@@ -455,7 +481,8 @@ func main() {
 						int(configuration.MaximumMessageSizeBytes),
 						runnerConfiguration.EnvironmentVariables,
 						configuration.ForceUploadTreesAndDirectories,
-						runnerConfiguration.ForwardAuxiliaryMetadataToEnvironment,
+						egressAuthRelay,
+						egressAuthGrantHeaderName,
 					)
 
 					if prefetchingConfiguration != nil {
